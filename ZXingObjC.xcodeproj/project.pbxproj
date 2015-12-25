@@ -1719,6 +1719,8 @@
 		7967E69021646DCB00C28E42 /* ZXCGImageLuminanceSourceInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 7967E67C2163B98C00C28E42 /* ZXCGImageLuminanceSourceInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		79983A472164756000E311F8 /* ZXQRCodeBlackBox7TestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 79983A442164755400E311F8 /* ZXQRCodeBlackBox7TestCase.m */; };
 		79983A482164756100E311F8 /* ZXQRCodeBlackBox7TestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 79983A442164755400E311F8 /* ZXQRCodeBlackBox7TestCase.m */; };
+		4B942BB61BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B942BB51BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m */; settings = {ASSET_TAGS = (); }; };
+		4B942BB71BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B942BB51BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m */; settings = {ASSET_TAGS = (); }; };
 		DB7257521A52420400EFF81B /* ZXAztecDecoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 25403CEF166A999D00E13304 /* ZXAztecDecoder.m */; };
 		DB7257531A52420400EFF81B /* ZXAztecWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 2519AB3317FD1EC000A71C45 /* ZXAztecWriter.m */; };
 		DB7257541A52420400EFF81B /* ZXAztecDetector.m in Sources */ = {isa = PBXBuildFile; fileRef = 25403CF2166A999D00E13304 /* ZXAztecDetector.m */; };
@@ -2973,6 +2975,8 @@
 		79983A432164755300E311F8 /* ZXQRCodeBlackBox7TestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZXQRCodeBlackBox7TestCase.h; sourceTree = "<group>"; };
 		79983A442164755400E311F8 /* ZXQRCodeBlackBox7TestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZXQRCodeBlackBox7TestCase.m; sourceTree = "<group>"; };
 		79DFDC2B2164735D00AC0F20 /* mac-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "mac-Info.plist"; sourceTree = SOURCE_ROOT; };
+		4B942BB41BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZXEAN8BlackBox2TestCase.h; sourceTree = "<group>"; };
+		4B942BB51BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZXEAN8BlackBox2TestCase.m; sourceTree = "<group>"; };
 		DB72547F1A523C9200EFF81B /* ZXingObjC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ZXingObjC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DB7254821A523C9200EFF81B /* ios-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ios-Info.plist"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -4081,6 +4085,8 @@
 				2540409C166AA0F100E13304 /* ZXEAN13WriterTestCase.m */,
 				25404054166AA0F100E13304 /* ZXEAN8BlackBox1TestCase.h */,
 				25404055166AA0F100E13304 /* ZXEAN8BlackBox1TestCase.m */,
+				4B942BB41BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.h */,
+				4B942BB51BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m */,
 				2540409D166AA0F100E13304 /* ZXEAN8WriterTestCase.h */,
 				2540409E166AA0F100E13304 /* ZXEAN8WriterTestCase.m */,
 				2540409F166AA0F100E13304 /* ZXEANManufacturerOrgSupportTest.h */,
@@ -5831,6 +5837,7 @@
 				023E698E18C0EF26001FF123 /* ZXUPCABlackBox2TestCase.m in Sources */,
 				4B2058252155B4F1009146DB /* ZXRGBLuminanceSourceTestCase.m in Sources */,
 				023E698F18C0EF26001FF123 /* ZXUPCABlackBox3ReflectiveTestCase.m in Sources */,
+				4B942BB61BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m in Sources */,
 				023E699018C0EF26001FF123 /* ZXUPCABlackBox4TestCase.m in Sources */,
 				023E699118C0EF26001FF123 /* ZXUPCABlackBox5TestCase.m in Sources */,
 				023E699218C0EF26001FF123 /* ZXUPCABlackBox6BlurryTestCase.m in Sources */,
@@ -6209,6 +6216,7 @@
 				023E69C418C0EF55001FF123 /* ZXUPCABlackBox2TestCase.m in Sources */,
 				4B2058262155B4F1009146DB /* ZXRGBLuminanceSourceTestCase.m in Sources */,
 				023E69C518C0EF55001FF123 /* ZXUPCABlackBox3ReflectiveTestCase.m in Sources */,
+				4B942BB71BD80E2000A2C08F /* ZXEAN8BlackBox2TestCase.m in Sources */,
 				023E69C618C0EF55001FF123 /* ZXUPCABlackBox4TestCase.m in Sources */,
 				023E69C718C0EF55001FF123 /* ZXUPCABlackBox5TestCase.m in Sources */,
 				023E69C818C0EF55001FF123 /* ZXUPCABlackBox6BlurryTestCase.m in Sources */,

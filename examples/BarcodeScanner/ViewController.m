@@ -17,6 +17,8 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import "ViewController.h"
 
+#define degreesToRadians(degrees) (M_PI * degrees / 180.0)
+
 @interface ViewController ()
 
 @property (nonatomic, strong) ZXCapture *capture;
@@ -24,6 +26,7 @@
 @property (nonatomic, weak) IBOutlet UILabel *decodedLabel;
 @property (nonatomic) BOOL scanning;
 @property (nonatomic) BOOL isFirstApplyOrientation;
+@property UIView *highlightView;
 
 @end
 

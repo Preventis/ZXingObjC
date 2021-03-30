@@ -17,19 +17,18 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import "ViewController.h"
 
-#define degreesToRadians(degrees) (M_PI * degrees / 180.0)
-
 @interface ViewController ()
 
 @property (nonatomic, strong) ZXCapture *capture;
 @property (nonatomic, weak) IBOutlet UIView *scanRectView;
 @property (nonatomic, weak) IBOutlet UILabel *decodedLabel;
-@property UIView *highlightView;
+@property (nonatomic) BOOL scanning;
+@property (nonatomic) BOOL isFirstApplyOrientation;
 
 @end
 
 @implementation ViewController {
-	CGAffineTransform _captureSizeTransform;
+  CGAffineTransform _captureSizeTransform;
 }
 
 #pragma mark - View Controller Methods
@@ -42,120 +41,113 @@
   [super viewDidLoad];
 
   self.capture = [[ZXCapture alloc] init];
-  self.capture.sessionPreset = AVCaptureSessionPreset1280x720;
+  self.capture.sessionPreset = AVCaptureSessionPreset1920x1080;
   self.capture.camera = self.capture.back;
   self.capture.focusMode = AVCaptureFocusModeContinuousAutoFocus;
-  ZXDecodeHints *hints = [ZXDecodeHints hints];
-  hints.tryHarder = YES;
-  self.capture.hints = hints;
-  // self.capture.rotation = 90.0f;
+  self.capture.delegate = self;
+
+  self.scanning = NO;
 
   [self.view.layer addSublayer:self.capture.layer];
 
-  self.highlightView = [[UIView alloc] init];
-  self.highlightView.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
-  self.highlightView.layer.borderColor = [UIColor greenColor].CGColor;
-  self.highlightView.layer.borderWidth = 3;
-  [self.scanRectView addSubview:self.highlightView];
-
   [self.view bringSubviewToFront:self.scanRectView];
   [self.view bringSubviewToFront:self.decodedLabel];
-  [self.scanRectView bringSubviewToFront:self.highlightView];
+
+  //  [self.capture setLuminance: TRUE];
+  //  [self.capture.luminance setFrame: CGRectMake(150, 30, 100, 100)];
+  //  [self.view.layer addSublayer: self.capture.luminance];
+
+  //  [self.capture enableHeuristic];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
   [super viewWillAppear:animated];
+}
 
-  self.capture.delegate = self;
+- (void)viewDidLayoutSubviews {
+  [super viewDidLayoutSubviews];
 
+  if (_isFirstApplyOrientation) return;
+  _isFirstApplyOrientation = TRUE;
   [self applyOrientation];
 }
 
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation {
-  return toInterfaceOrientation == UIInterfaceOrientationPortrait;
-}
-
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation {
-	[super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
-	[self applyOrientation];
-}
-
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id <UIViewControllerTransitionCoordinator>)coordinator {
-	[super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-	[coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
-	} completion:^(id<UIViewControllerTransitionCoordinatorContext> context)
-	{
-		[self applyOrientation];
-	}];
+  [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+  [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+  } completion:^(id<UIViewControllerTransitionCoordinatorContext> context)
+   {
+     [self applyOrientation];
+   }];
 }
 
 #pragma mark - Private
 - (void)applyOrientation {
-	UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-	float scanRectRotation;
-	float captureRotation;
+  UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+  float scanRectRotation;
+  float captureRotation;
 
-	switch (orientation) {
-		case UIInterfaceOrientationPortrait:
-			captureRotation = 0;
-			scanRectRotation = 90;
-			break;
-		case UIInterfaceOrientationLandscapeLeft:
-			captureRotation = 90;
-			scanRectRotation = 180;
-			break;
-		case UIInterfaceOrientationLandscapeRight:
-			captureRotation = 270;
-			scanRectRotation = 0;
-			break;
-		case UIInterfaceOrientationPortraitUpsideDown:
-			captureRotation = 180;
-			scanRectRotation = 270;
-			break;
-		default:
-			captureRotation = 0;
-			scanRectRotation = 90;
-			break;
-	}
-	[self applyRectOfInterest:orientation];
-	CGAffineTransform transform = CGAffineTransformMakeRotation((CGFloat) (captureRotation / 180 * M_PI));
-	[self.capture setTransform:transform];
-	[self.capture setRotation:scanRectRotation];
-	self.capture.layer.frame = self.view.frame;
+  switch (orientation) {
+    case UIInterfaceOrientationPortrait:
+      captureRotation = 0;
+      scanRectRotation = 90;
+      break;
+    case UIInterfaceOrientationLandscapeLeft:
+      captureRotation = 90;
+      scanRectRotation = 180;
+      break;
+    case UIInterfaceOrientationLandscapeRight:
+      captureRotation = 270;
+      scanRectRotation = 0;
+      break;
+    case UIInterfaceOrientationPortraitUpsideDown:
+      captureRotation = 180;
+      scanRectRotation = 270;
+      break;
+    default:
+      captureRotation = 0;
+      scanRectRotation = 90;
+      break;
+  }
+  self.capture.layer.frame = self.view.frame;
+  CGAffineTransform transform = CGAffineTransformMakeRotation((CGFloat) (captureRotation / 180 * M_PI));
+  [self.capture setTransform:transform];
+  [self.capture setRotation:scanRectRotation];
+
+  [self applyRectOfInterest:orientation];
 }
 
 - (void)applyRectOfInterest:(UIInterfaceOrientation)orientation {
-	CGFloat scaleVideo, scaleVideoX, scaleVideoY;
-	CGFloat videoSizeX, videoSizeY;
-	CGRect transformedVideoRect = self.scanRectView.frame;
-	if([self.capture.sessionPreset isEqualToString:AVCaptureSessionPreset1920x1080]) {
-		videoSizeX = 1080;
-		videoSizeY = 1920;
-	} else {
-		videoSizeX = 720;
-		videoSizeY = 1280;
-	}
-	if(UIInterfaceOrientationIsPortrait(orientation)) {
-		scaleVideoX = self.view.frame.size.width / videoSizeX;
-		scaleVideoY = self.view.frame.size.height / videoSizeY;
-		scaleVideo = MAX(scaleVideoX, scaleVideoY);
-		if(scaleVideoX > scaleVideoY) {
-			transformedVideoRect.origin.y += (scaleVideo * videoSizeY - self.view.frame.size.height) / 2;
-		} else {
-			transformedVideoRect.origin.x += (scaleVideo * videoSizeX - self.view.frame.size.width) / 2;
-		}
-	} else {
-		scaleVideoX = self.view.frame.size.width / videoSizeY;
-		scaleVideoY = self.view.frame.size.height / videoSizeX;
-		scaleVideo = MAX(scaleVideoX, scaleVideoY);
-		if(scaleVideoX > scaleVideoY) {
-			transformedVideoRect.origin.y += (scaleVideo * videoSizeX - self.view.frame.size.height) / 2;
-		} else {
-			transformedVideoRect.origin.x += (scaleVideo * videoSizeY - self.view.frame.size.width) / 2;
-		}
-	}
-	_captureSizeTransform = CGAffineTransformMakeScale(1/scaleVideo, 1/scaleVideo);
-	self.capture.scanRect = CGRectApplyAffineTransform(transformedVideoRect, _captureSizeTransform);
+  CGFloat scaleVideoX, scaleVideoY;
+  CGFloat videoSizeX, videoSizeY;
+  CGRect transformedVideoRect = self.scanRectView.frame;
+  if([self.capture.sessionPreset isEqualToString:AVCaptureSessionPreset1920x1080]) {
+    videoSizeX = 1080;
+    videoSizeY = 1920;
+  } else {
+    videoSizeX = 720;
+    videoSizeY = 1280;
+  }
+  if(UIInterfaceOrientationIsPortrait(orientation)) {
+    scaleVideoX = self.capture.layer.frame.size.width / videoSizeX;
+    scaleVideoY = self.capture.layer.frame.size.height / videoSizeY;
+
+    // Convert CGPoint under portrait mode to map with orientation of image
+    // because the image will be cropped before rotate
+    // reference: https://github.com/TheLevelUp/ZXingObjC/issues/222
+    CGFloat realX = transformedVideoRect.origin.y;
+    CGFloat realY = self.capture.layer.frame.size.width - transformedVideoRect.size.width - transformedVideoRect.origin.x;
+    CGFloat realWidth = transformedVideoRect.size.height;
+    CGFloat realHeight = transformedVideoRect.size.width;
+    transformedVideoRect = CGRectMake(realX, realY, realWidth, realHeight);
+
+  } else {
+    scaleVideoX = self.capture.layer.frame.size.width / videoSizeY;
+    scaleVideoY = self.capture.layer.frame.size.height / videoSizeX;
+  }
+
+  _captureSizeTransform = CGAffineTransformMakeScale(1.0/scaleVideoX, 1.0/scaleVideoY);
+  self.capture.scanRect = CGRectApplyAffineTransform(transformedVideoRect, _captureSizeTransform);
 }
 
 #pragma mark - Private Methods
@@ -217,59 +209,44 @@
 
 #pragma mark - ZXCaptureDelegate Methods
 
+- (void)captureCameraIsReady:(ZXCapture *)capture {
+  self.scanning = YES;
+}
+
 - (void)captureResult:(ZXCapture *)capture result:(ZXResult *)result {
+  if (!self.scanning) return;
   if (!result) return;
-  //if (result.angle != 0.0) {
 
-    // We got a result. Display information about the result onscreen.
-    NSString *formatString = [self barcodeFormatToString:result.barcodeFormat];
-    NSString *display = [NSString stringWithFormat:@"Scanned!\n\nFormat: %@\n\nContents:\n%@\n\nAngle: %f.2", formatString, result.text, result.angle ];
-    [self.decodedLabel performSelectorOnMainThread:@selector(setText:) withObject:display waitUntilDone:YES];
+  // We got a result.
+  [self.capture stop];
+  self.scanning = NO;
 
-    NSArray<ZXResultPoint *> *resultPoints = result.resultPoints;
+  // Display found barcode location
+  CGAffineTransform inverse = CGAffineTransformInvert(_captureSizeTransform);
+  NSMutableArray *points = [[NSMutableArray alloc] init];
+  NSString *location = @"";
+  for (ZXResultPoint *resultPoint in result.resultPoints) {
+    CGPoint cgPoint = CGPointMake(resultPoint.x, resultPoint.y);
+    CGPoint transformedPoint = CGPointApplyAffineTransform(cgPoint, inverse);
+    transformedPoint = [self.scanRectView convertPoint:transformedPoint toView:self.scanRectView.window];
+    NSValue* windowPointValue = [NSValue valueWithCGPoint:transformedPoint];
+    location = [NSString stringWithFormat:@"%@ (%f, %f)", location, transformedPoint.x, transformedPoint.y];
+    [points addObject:windowPointValue];
+  }
 
-    // camera params for scaling and positioning
-    CGFloat cameraWidth = 720.0f;
-    CGFloat cameraHeight = 1280.0f;
+  // Display information about the result onscreen.
+  NSString *formatString = [self barcodeFormatToString:result.barcodeFormat];
+  NSString *display = [NSString stringWithFormat:@"Scanned!\n\nFormat: %@\n\nContents:\n%@\nLocation: %@", formatString, result.text, location];
+  [self.decodedLabel performSelectorOnMainThread:@selector(setText:) withObject:display waitUntilDone:YES];
 
-    CGFloat widthOffset = -30;
-    CGFloat heightOffset = -128;
+  // Vibrate
+  AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
 
-    CGFloat screenWidth = self.view.frame.size.width + widthOffset;
-    CGFloat screenHeight = self.view.frame.size.height + heightOffset;
-
-    // actual scaling
-    CGFloat scaleWidth = self.view.frame.size.height / cameraHeight;
-    CGFloat scaleHeight = self.view.frame.size.width / cameraWidth;
-
-    CGFloat width = resultPoints[1].y - resultPoints[0].y;
-    CGFloat height = resultPoints[2].x - resultPoints[0].x;
-
-    width = width * scaleWidth;
-    height = height * scaleWidth + 5;
-
-    CGFloat x = screenWidth - resultPoints[1].y * scaleWidth;
-    CGFloat y = resultPoints[1].x * scaleHeight + heightOffset;
-
-    CGRect scannedBarcodeRect = CGRectMake(x, y, width, height);
-
-    // debugging purpose
-    NSLog(@"points: %@", resultPoints);
-    NSLog(@"angle: %f", result.angle);
-    NSLog(@"scannedBarcodeRect: %@", NSStringFromCGRect(self.highlightView.frame));
-
-    self.highlightView.frame = scannedBarcodeRect;
-    // self.highlightView.transform = CGAffineTransformMakeRotation(- degreesToRadians(result.angle));
-
-    // Vibrate
-    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-
-    //[self.capture stop];
-
-    //dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-    //  [self.capture start];
-    //});
-  //}
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+    self.scanning = YES;
+    [self.capture start];
+  });
 }
 
 @end
+

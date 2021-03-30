@@ -26,7 +26,7 @@
     _expectedFormat = expectedFormat;
     _testResults = [NSMutableArray array];
   }
-
+  
   return self;
 }
 
@@ -51,7 +51,7 @@
       [imageFiles addObject:[NSURL fileURLWithPath:file]];
     }
   }
-
+  
   return imageFiles;
 }
 
@@ -113,7 +113,7 @@
       return @"UPC/EAN extension";
       break;
   }
-
+  
   return nil;
 }
 
@@ -130,25 +130,25 @@
   if (self.testResults.count == 0) {
     XCTFail(@"No test results");
   }
-
+  
   NSFileManager *fileManager = [NSFileManager defaultManager];
   NSArray *imageFiles = [self imageFiles];
   int testCount = (int)[self.testResults count];
-
+  
   ZXIntArray *passedCounts = [[ZXIntArray alloc] initWithLength:testCount];
   ZXIntArray *misreadCounts = [[ZXIntArray alloc] initWithLength:testCount];
   ZXIntArray *tryHarderCounts = [[ZXIntArray alloc] initWithLength:testCount];
   ZXIntArray *tryHarderMisreadCounts = [[ZXIntArray alloc] initWithLength:testCount];
-
+  
   for (NSURL *testImage in imageFiles) {
     NSLog(@"Starting %@", [self pathInBundle:testImage]);
-
+    
     ZXImage *image = [[ZXImage alloc] initWithURL:testImage];
-
+    
     NSString *testImageFileName = [[[testImage path] componentsSeparatedByString:@"/"] lastObject];
     NSString *fileBaseName = [testImageFileName substringToIndex:[testImageFileName rangeOfString:@"."].location];
     NSString *expectedTextFile = [[NSBundle bundleForClass:[self class]] pathForResource:fileBaseName ofType:@"txt" inDirectory:self.testBase];
-
+    
     NSString *expectedText;
     if (expectedTextFile) {
       expectedText = [self readFileAsString:expectedTextFile encoding:NSUTF8StringEncoding];
@@ -157,47 +157,29 @@
       XCTAssertNotNil(expectedTextFile, @"Expected text does not exist");
       expectedText = [self readFileAsString:expectedTextFile encoding:NSISOLatin1StringEncoding];
     }
-
+    
     NSURL *expectedMetadataFile = [NSURL URLWithString:[[NSBundle bundleForClass:[self class]] pathForResource:fileBaseName ofType:@".metadata.txt" inDirectory:self.testBase]];
     NSMutableDictionary *expectedMetadata = [NSMutableDictionary dictionary];
     if ([fileManager fileExistsAtPath:[expectedMetadataFile path]]) {
       expectedMetadata = [NSMutableDictionary dictionaryWithContentsOfFile:[expectedMetadataFile path]];
     }
-      
-    NSMutableArray *barcodeLocationPoints = [[NSMutableArray alloc] init];
-    NSString *expectedLocationTextFile = [[NSBundle bundleForClass:[self class]] pathForResource:[NSString stringWithFormat:@"%@_loc", fileBaseName] ofType:@"txt" inDirectory:self.testBase];
-    if (expectedLocationTextFile) {
-      NSString *barcodeLocation = [NSString stringWithContentsOfFile:expectedLocationTextFile encoding:NSUTF8StringEncoding error:nil];
-      NSArray *barcodeLocationComponents = [barcodeLocation componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-      for (NSString *pointString in barcodeLocationComponents) {
-        CGPoint point = [self pointFromString:pointString];
-        NSValue *value = [NSValue valueWithCGPoint:point];
-        [barcodeLocationPoints addObject:value];
-      }
-    }
     
-    
-    NSString *expectedAngleTextFile = [[NSBundle bundleForClass:[self class]] pathForResource:[NSString stringWithFormat:@"%@_ang", fileBaseName] ofType:@"txt" inDirectory:self.testBase];
-    NSString *expectedAngle = [[NSString alloc] init];
-    if (expectedAngleTextFile) {
-      expectedAngle = [NSString stringWithContentsOfFile:expectedAngleTextFile encoding:NSUTF8StringEncoding error:nil];
-    }
-
     for (int x = 0; x < testCount; x++) {
       float rotation = [(ZXTestResult *)self.testResults[x] rotation];
       ZXImage *rotatedImage = [self rotateImage:image degrees:rotation];
-      ZXLuminanceSource *source = [[ZXCGImageLuminanceSource alloc] initWithCGImage:rotatedImage.cgimage];
+      ZXLuminanceSource *source = [[ZXCGImageLuminanceSource alloc] initWithCGImage: rotatedImage.cgimage
+                                                                         sourceInfo: _luminanceSourceInfo];
       ZXBinaryBitmap *bitmap = [[ZXBinaryBitmap alloc] initWithBinarizer:[[ZXHybridBinarizer alloc] initWithSource:source]];
       BOOL misread;
-      if ([self decode:bitmap rotation:rotation expectedText:expectedText expectedMetadata:expectedMetadata expectedBarcodeLocation:barcodeLocationPoints expectedAngle:expectedAngle tryHarder:NO misread:&misread]) {
+      if ([self decode:bitmap rotation:rotation expectedText:expectedText expectedMetadata:expectedMetadata tryHarder:NO misread:&misread]) {
         passedCounts.array[x]++;
       } else if (misread) {
         misreadCounts.array[x]++;
       } else {
         NSLog(@"could not read at rotation %f", rotation);
       }
-
-      if ([self decode:bitmap rotation:rotation expectedText:expectedText expectedMetadata:expectedMetadata expectedBarcodeLocation:barcodeLocationPoints expectedAngle:expectedAngle tryHarder:YES misread:&misread]) {
+      
+      if ([self decode:bitmap rotation:rotation expectedText:expectedText expectedMetadata:expectedMetadata tryHarder:YES misread:&misread]) {
         tryHarderCounts.array[x]++;
       } else if (misread) {
         tryHarderMisreadCounts.array[x]++;
@@ -206,13 +188,13 @@
       }
     }
   }
-
+  
   // Print the results of all tests first
   int totalFound = 0;
   int totalMustPass = 0;
   int totalMisread = 0;
   int totalMaxMisread = 0;
-
+  
   for (int x = 0; x < testCount; x++) {
     ZXTestResult *testResult = self.testResults[x];
     NSLog(@"Rotation %d degrees:", (int) testResult.rotation);
@@ -231,64 +213,78 @@
     totalMisread += misreadCounts.array[x] + tryHarderMisreadCounts.array[x];
     totalMaxMisread += testResult.maxMisreads + testResult.maxTryHarderMisreads;
   }
-
+  
   int totalTests = (int)imageFiles.count * testCount * 2;
   NSLog(@"TOTALS:\nDecoded %d images out of %d (%d%%, %d required)",
         totalFound, totalTests, totalFound * 100 / totalTests, totalMustPass);
   if (totalFound > totalMustPass) {
     NSLog(@"  +++ Test too lax by %d images", totalFound - totalMustPass);
   } else if (totalFound < totalMustPass) {
+    NSLog(@"total must pass %d - total found %d", totalMustPass, totalFound);
     NSLog(@"  --- Test failed by %d images", totalMustPass - totalFound);
   }
-
+  
   if (totalMisread < totalMaxMisread) {
     NSLog(@"  +++ Test expects too many misreads by %d images", totalMaxMisread - totalMisread);
   } else if (totalMisread > totalMaxMisread) {
     NSLog(@"  --- Test had too many misreads by %d images", totalMisread - totalMaxMisread);
   }
-
+  
   // Then run through again and assert if any failed
   if (assertOnFailure) {
     for (int x = 0; x < testCount; x++) {
       ZXTestResult *testResult = self.testResults[x];
-      NSString *label = [NSString stringWithFormat:@"Rotation %i degrees: Too many images failed", (int) testResult.rotation];
+      NSString *label = [NSString stringWithFormat:@"Rotation %f degrees: Too many images failed", testResult.rotation];
       XCTAssertTrue(passedCounts.array[x] >= testResult.mustPassCount, @"%@", label);
       XCTAssertTrue(tryHarderCounts.array[x] >= testResult.tryHarderCount, @"Try harder, %@", label);
-      label = [NSString stringWithFormat:@"Rotation %i degrees: Too many images misread", (int) testResult.rotation];
+      label = [NSString stringWithFormat:@"Rotation %f degrees: Too many images misread", testResult.rotation];
       XCTAssertTrue(misreadCounts.array[x] <= testResult.maxMisreads, @"%@", label);
       XCTAssertTrue(tryHarderMisreadCounts.array[x] <= testResult.maxTryHarderMisreads, @"Try harder, %@", label);
     }
   }
 }
 
-- (BOOL)decode:(ZXBinaryBitmap *)source rotation:(float)rotation expectedText:(NSString *)expectedText expectedMetadata:(NSMutableDictionary *)expectedMetadata expectedBarcodeLocation:(NSArray *)expectedBarcodeLocation expectedAngle:(NSString *)expectedAngle tryHarder:(BOOL)tryHarder misread:(BOOL *)misread {
-  NSString *suffix = [NSString stringWithFormat:@" (%@rotation: %i)", tryHarder ? @"try harder, " : @"", (int) rotation];
+- (BOOL)decode:(ZXBinaryBitmap *)source rotation:(float)rotation expectedText:(NSString *)expectedText expectedMetadata:(NSMutableDictionary *)expectedMetadata tryHarder:(BOOL)tryHarder misread:(BOOL *)misread {
+  NSString *suffix = [NSString stringWithFormat:@" (%@rotation: %d)", tryHarder ? @"try harder, " : @"", (int) rotation];
   *misread = NO;
-
+  
+  if (_shouldTruncateNewline) {
+    if ([expectedText length] > 0 && [[expectedText substringFromIndex: [expectedText length] - 1] isEqualToString: @"\n"]) {
+      NSString *temp = [expectedText substringToIndex: [expectedText length] - 1];
+      expectedText = temp;
+    }
+  }
+  
   ZXDecodeHints *hints = [ZXDecodeHints hints];
+  ZXDecodeHints *pureHints = [ZXDecodeHints hints];
+  pureHints.pureBarcode = YES;
   if (tryHarder) {
     hints.tryHarder = YES;
+    pureHints.tryHarder = YES;
   }
-
-  ZXResult *result = [self.barcodeReader decode:source hints:hints error:nil];
+  
+  ZXResult *result = [self.barcodeReader decode:source hints:pureHints error:nil];
+  if (!result) {
+    result = [self.barcodeReader decode:source hints:hints error:nil];
+  }
   if (!result) {
     return NO;
   }
-
+  
   if (self.expectedFormat != result.barcodeFormat) {
     NSLog(@"Format mismatch: expected '%@' but got '%@'%@",
           [[self class] barcodeFormatAsString:self.expectedFormat], [[self class] barcodeFormatAsString:result.barcodeFormat], suffix);
     *misread = YES;
     return NO;
   }
-
+  
   NSString *resultText = result.text;
   if (![expectedText isEqualToString:resultText]) {
     NSLog(@"Content mismatch: expected '%@' but got '%@'%@", expectedText, resultText, suffix);
     *misread = YES;
     return NO;
   }
-
+  
   NSMutableDictionary *resultMetadata = result.resultMetadata;
   for (id keyObj in [expectedMetadata allKeys]) {
     ZXResultMetadataType key = [keyObj intValue];
@@ -301,48 +297,7 @@
     }
   }
   
-  if (expectedBarcodeLocation.count > 0) {
-    for (ZXResultPoint *point in result.resultPoints) {
-      if (![self pointHasMatchInArray:expectedBarcodeLocation point:point rotation:rotation]) {
-        NSLog(@"Wrong barcode location: expected '%@' but got '%@', %@", expectedBarcodeLocation, result.resultPoints, suffix);
-        *misread = YES;
-        return NO;
-      }
-    }
-  }
-  
-  if (expectedAngle.length > 0) {
-    // float to string comparison, a bit hacky...
-    expectedAngle = [NSString stringWithFormat:@"%.2f", [expectedAngle floatValue]];
-    NSString *actualAngle = [NSString stringWithFormat:@"%.2f", result.angle];
-    if (![expectedAngle isEqualToString:actualAngle]) {
-      NSLog(@"Wrong barcode angle: expected '%@' but got '%@'", expectedAngle, actualAngle);
-      *misread = YES;
-      return NO;
-    }
-  }
-
   return YES;
-}
-
-- (BOOL)pointHasMatchInArray:(NSArray *)barcodeLocation point:(ZXResultPoint *)point rotation:(int)rotation {
-  int x = point.x;
-  int y = point.y;
-  BOOL rotated = rotation == 180;
-  for (NSValue *value in barcodeLocation) {
-    CGPoint expected = value.CGPointValue;
-    BOOL isExpectedX = x == expected.x;
-    BOOL isExpectedY = y == expected.y;
-    // due to grey pixels we want to have a small delta of our expected points for a rotated barcode
-    if (rotated) {
-      isExpectedX = (x == expected.x || x+1 == expected.x || x-1 == expected.x || x+2 == expected.x || x-2 == expected.x);
-      isExpectedY = (y == expected.y || y+1 == expected.y || y-1 == expected.y || y+2 == expected.y || y-2 == expected.y);
-    }
-    if (isExpectedX && isExpectedY) {
-      return YES;
-    }
-  }
-  return NO;
 }
 
 - (NSString *)readFileAsString:(NSString *)file encoding:(NSStringEncoding)encoding {
@@ -353,25 +308,17 @@
   return stringContents;
 }
 
-- (CGPoint)pointFromString:(NSString *)point {
-  point = [point substringWithRange:NSMakeRange(1, point.length - 2)];
-  NSArray *points = [point componentsSeparatedByString:@","];
-  NSInteger x = [points[0] integerValue];
-  NSInteger y = [points[1] integerValue];
-  return CGPointMake(x, y);
-}
-
 // Adapted from http://blog.coriolis.ch/2009/09/04/arbitrary-rotation-of-a-cgimage/ and https://github.com/JanX2/CreateRotateWriteCGImage
 - (ZXImage *)rotateImage:(ZXImage *)original degrees:(float)degrees {
   if (degrees == 0.0f) {
     return original;
   }
   double radians = -1 * degrees * (M_PI / 180);
-
+  
   CGRect imgRect = CGRectMake(0, 0, original.width, original.height);
   CGAffineTransform transform = CGAffineTransformMakeRotation(radians);
   CGRect rotatedRect = CGRectApplyAffineTransform(imgRect, transform);
-
+  
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
   CGContextRef context = CGBitmapContextCreate(NULL,
                                                rotatedRect.size.width,
@@ -383,22 +330,22 @@
   CGContextSetAllowsAntialiasing(context, FALSE);
   CGContextSetInterpolationQuality(context, kCGInterpolationNone);
   CGColorSpaceRelease(colorSpace);
-
+  
   CGContextTranslateCTM(context,
                         +(rotatedRect.size.width/2),
                         +(rotatedRect.size.height/2));
   CGContextRotateCTM(context, radians);
-
+  
   CGContextDrawImage(context, CGRectMake(-imgRect.size.width / 2,
                                          -imgRect.size.height / 2,
                                          imgRect.size.width,
                                          imgRect.size.height),
                      original.cgimage);
-
+  
   CGImageRef rotatedImage = CGBitmapContextCreateImage(context);
-
+  
   CFRelease(context);
-
+  
   return [[ZXImage alloc] initWithCGImageRef:rotatedImage];
 }
 

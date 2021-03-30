@@ -136,12 +136,6 @@
 }
 
 - (BOOL)getX:(int)x y:(int)y {
-  if (x > self.width || x < 0) {
-    return NO;
-  }
-  if (y > self.height || y < 0) {
-    return NO;
-  }
   NSInteger offset = y * self.rowSize + (x / 32);
   return ((_bits[offset] >> (x & 0x1f)) & 1) != 0;
 }
@@ -277,8 +271,8 @@
     }
   }
 
-  NSInteger width = right - left;
-  NSInteger height = bottom - top;
+  NSInteger width = right - left + 1;
+  NSInteger height = bottom - top + 1;
 
   if (width < 0 || height < 0) {
     return nil;
@@ -353,6 +347,7 @@
   return hash;
 }
 
+// string representation using "X" for set and " " for unset bits
 - (NSString *)description {
   return [self descriptionWithSetString:@"X " unsetString:@"  "];
 }

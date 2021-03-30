@@ -16,6 +16,7 @@
 
 #import "ZXBarcodeFormat.h"
 #import "ZXResultMetadataType.h"
+#import "ZXByteArray.h"
 
 @class ZXByteArray;
 
@@ -35,13 +36,16 @@
 @property (nonatomic, strong, readonly) ZXByteArray *rawBytes;
 
 /**
+ * @return how many bits of `rawBytes` are valid; typically 8 times its length
+ */
+@property (nonatomic) int numBits;
+
+/**
  * @return points related to the barcode in the image. These are typically points
  *         identifying finder patterns or the corners of the barcode. The exact meaning is
  *         specific to the type of barcode that was decoded.
  */
 @property (nonatomic, strong, readonly) NSMutableArray *resultPoints;
-
-@property (nonatomic) float angle;
 
 /**
  * @return ZXBarcodeFormat representing the format of the barcode that was decoded
@@ -59,8 +63,11 @@
 
 - (id)initWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format;
 - (id)initWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format timestamp:(long)timestamp;
+- (id)initWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes numBits:(int)numBits resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format timestamp:(long)timestamp;
 + (id)resultWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format;
++ (id)resultWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes numBits:(int)numBits resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format;
 + (id)resultWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format timestamp:(long)timestamp;
++ (id)resultWithText:(NSString *)text rawBytes:(ZXByteArray *)rawBytes numBits:(int)numBits resultPoints:(NSArray *)resultPoints format:(ZXBarcodeFormat)format timestamp:(long)timestamp;
 - (void)putMetadata:(ZXResultMetadataType)type value:(id)value;
 - (void)putAllMetadata:(NSMutableDictionary *)metadata;
 - (void)addResultPoints:(NSArray *)newPoints;

@@ -23,3 +23,9 @@ build/
 *~
 *.dat
 *.dep
+
+# Swift PM
+.swiftpm
+
+# IDE
+.idea
